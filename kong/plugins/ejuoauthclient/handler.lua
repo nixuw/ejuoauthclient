@@ -150,26 +150,22 @@ local PostMethod = HttpMethod:extend()
 function PostMethod:new()
     self.method = ngx.HTTP_POST
     ngx.req.read_body()
+
+    local uri_args = kong.request.get_query()  -- url参数
+    local body_args = kong.request.get_body()  -- 表单参数
+    local ptalbe = kong.table.merge(uri_args, body_args)
+    self.ptalbe = ptalbe
 end
 
 function PostMethod:getScopeValue()
 
-    local args = ngx.req.get_post_args()
-    return args["scope"]
+    return self.ptalbe["scope"]
 end
 
 function PostMethod:appendRequestParam(t)
-    kong.log.err("in PostMethod appendRequestParam...")
-    -- url参数
-    for name, value in pairs(ngx.req.get_uri_args()) do
+    for name, value in pairs(self.ptalbe) do
         t[name] = value
     end
-
-    -- post表单参数
-    for name, value in pairs(ngx.req.get_post_args()) do
-        t[name] = value
-    end
-
     return t
 end
 
@@ -190,6 +186,7 @@ ejuoauthclient.PRIORITY=220
 
 
 function ejuoauthclient:access(conf)
+
     -- 如果其它插件设置了这个标志，则表示无需再作任何处理
     if ngx.ctx.eju_dont_do_anything then
         return
